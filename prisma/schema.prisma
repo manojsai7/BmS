@@ -1,0 +1,102 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  clerkId       String    @unique
+  email         String    @unique
+  name          String?
+  imageUrl      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  bookings      Booking[]
+  notifications Notification[]
+}
+
+model Event {
+  id              String   @id @default(cuid())
+  name            String
+  description     String
+  location        String
+  date            DateTime
+  eventType       EventType
+  imageUrl        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  bookings        Booking[]
+  seats           Seat[]
+}
+
+model Seat {
+  id        String   @id @default(cuid())
+  seatNumber String
+  isBooked  Boolean  @default(false)
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id])
+  bookingId String?
+  booking   Booking? @relation(fields: [bookingId], references: [id])
+
+  @@unique([eventId, seatNumber])
+}
+
+model Booking {
+  id              String      @id @default(cuid())
+  userId          String
+  eventId         String
+  bookingStatus   BookingStatus
+  totalPrice      Float
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  user            User        @relation(fields: [userId], references: [id])
+  event           Event       @relation(fields: [eventId], references: [id])
+  seats           Seat[]
+  payment         Payment?
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  bookingId     String        @unique
+  paymentStatus PaymentStatus
+  stripeChargeId String?      @unique
+  razorpayPaymentId String?   @unique
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  booking       Booking       @relation(fields: [bookingId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+enum EventType {
+  MOVIE
+  CONCERT
+  SPORT
+  PLAY
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
